@@ -1,5 +1,6 @@
 const TelegramBotWebHook = require('./telegramWebHook');
 const TelegramBotPolling = require('./telegramPolling');
+const ExternalBotWebHook = require('./externalWebHook');
 const debug = require('debug')('node-telegram-bot-api');
 const EventEmitter = require('eventemitter3');
 const fileType = require('file-type');
@@ -56,6 +57,10 @@ class TelegramBot extends EventEmitter {
 
     if (options.webHook) {
       this._WebHook = new TelegramBotWebHook(token, options.webHook, this.processUpdate.bind(this));
+    }
+
+    if (options.externalWebHook) {
+      this._ExtWebHook = new ExternalBotWebHook(options.secret, options.externalWebHook, this.processUpdate.bind(this));
     }
   }
 
@@ -710,6 +715,19 @@ class TelegramBot extends EventEmitter {
       messageId,
       callback
     });
+  }
+
+  /**
+   * Handle an external webhook request.
+   * @param  {HttpRequestObject}   req       Received http request.
+   * @param  {HttpResponseObject}   res      Response object to respond to requester.
+   */
+  handleExternalRequest(req, res) {
+    if (!this._ExtWebHook) {
+      return Promise.reject("No external webhook assigned");
+    }
+    this._ExtWebHook._requestListener(req, res);
+    return Promise.resolve();
   }
 }
 
